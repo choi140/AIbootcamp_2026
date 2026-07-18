@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바당타임 발표</title>
+<link rel="icon" type="image/png" href="favicon.png"/>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.min.css"/>
+<style>
+  /* ===== 초록 계열 팔레트 (한 곳에서 색을 통일하려면 여기만 수정) ===== */
+  :root{
+    --green-900:#0b4a5e;
+    --green-700:#0e6e7a;
+    --green-500:#159a8c;
+    --green-300:#6fc6b6;
+    --green-100:#e4f4f1;
+    --ink:#122b2b;        /* 본문 글자 */
+    --muted:#4f6a68;      /* 보조 글자 */
+    --bg:#ffffff;
+    --card:#f0f8f6;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Pretendard","Segoe UI","Malgun Gothic",system-ui,sans-serif;
+    color:var(--ink); background:var(--green-900);
+    overflow:hidden;
+    /* 한국어 단어가 줄 중간에서 어색하게 끊기지 않도록 어절 단위로 줄바꿈 */
+    word-break:keep-all;
+    overflow-wrap:break-word;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  /* 모든 텍스트 요소에 동일 규칙 적용 */
+  h1,h2,h3,p,li,span,b{word-break:keep-all; overflow-wrap:break-word}
+
+  /* ===== 슬라이드 무대 ===== */
+  #deck{position:fixed; inset:0}
+  .slide{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column; justify-content:center;
+    padding:8vh 9vw;
+    background:var(--bg);
+    animation:fade .45s cubic-bezier(.22,.61,.36,1);
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
+
+  /* 본문 슬라이드 배경에 은은한 초록 무드 */
+  .slide:not(.cover):not(.section):not(.closing){
+    background:
+      radial-gradient(120% 90% at 100% 0%, var(--green-100) 0%, transparent 45%),
+      radial-gradient(100% 80% at 0% 100%, rgba(21,154,140,.06) 0%, transparent 40%),
+      var(--bg);
+  }
+
+  .eyebrow{display:inline-flex; align-items:center; gap:.55rem;
+    color:var(--green-700); font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; font-size:clamp(.78rem,1.4vw,.98rem); margin-bottom:1.3rem}
+  .eyebrow::before{content:""; width:1.8rem; height:2px; border-radius:2px;
+    background:linear-gradient(90deg,var(--green-500),var(--green-300))}
+  h1{font-size:clamp(2.4rem,6.4vw,4.8rem); line-height:1.05; font-weight:800; letter-spacing:-.03em}
+  h2{font-size:clamp(1.8rem,4.2vw,3.2rem); line-height:1.14; font-weight:800; letter-spacing:-.015em}
+  .lead{font-size:clamp(1.1rem,2.2vw,1.6rem); color:var(--muted); margin-top:1.5rem;
+    max-width:42ch; line-height:1.6}
+
+  /* ===== 표지 ===== */
+  .cover{
+    background:linear-gradient(135deg,var(--green-900) 0%,var(--green-700) 55%,var(--green-500) 100%);
+    color:#fff; overflow:hidden;
+  }
+  /* 물결 무드의 장식 (은은한 광원 + 파도 라인) */
+  .cover::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(60% 55% at 85% 10%, rgba(111,198,182,.35) 0%, transparent 60%),
+      radial-gradient(50% 45% at 0% 100%, rgba(255,255,255,.10) 0%, transparent 55%)}
+  .cover::after{content:""; position:absolute; left:0; right:0; bottom:0; height:34vh;
+    pointer-events:none; opacity:.5;
+    background:
+      radial-gradient(120% 100% at 50% 140%, rgba(228,244,241,.28) 0%, transparent 60%);
+    -webkit-mask:radial-gradient(120% 100% at 50% 140%, #000 40%, transparent 60%)}
+  .cover>*{position:relative; z-index:1}
+  .cover .eyebrow{color:var(--green-100)}
+  .cover .eyebrow::before{background:linear-gradient(90deg,var(--green-100),transparent)}
+  .cover h1{margin-top:.2rem; text-shadow:0 6px 30px rgba(0,0,0,.18)}
+  .brand{display:flex; align-items:center; gap:1.1rem}
+  .brand-logo{width:clamp(3rem,7vw,5rem); height:clamp(3rem,7vw,5rem);
+    border-radius:22%; object-fit:cover; flex:0 0 auto;
+    box-shadow:0 10px 30px -8px rgba(0,0,0,.45); background:#fff}
+  .cover .lead{color:rgba(255,255,255,.92)}
+  .cover .meta{margin-top:auto; padding-top:2.2rem; font-size:clamp(.9rem,1.6vw,1.15rem);
+    color:rgba(255,255,255,.9); display:flex; gap:2rem; flex-wrap:wrap}
+  .cover .meta span{display:inline-flex; align-items:center; gap:.6rem;
+    padding:.55rem 1.1rem; border-radius:999px;
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18)}
+
+  /* ===== 목차 ===== */
+  .toc ol{list-style:none; counter-reset:toc; margin-top:2.4rem; display:grid; gap:1.1rem;
+    grid-template-columns:1fr 1fr; max-width:62vw}
+  .toc li{counter-increment:toc; display:flex; align-items:center; gap:1.2rem;
+    font-size:clamp(1.1rem,2.2vw,1.7rem); font-weight:700; padding:1rem 1.3rem;
+    background:var(--card); border:1px solid rgba(21,154,140,.14); border-radius:16px;
+    transition:transform .2s, box-shadow .2s}
+  .toc li:hover{transform:translateY(-3px); box-shadow:0 16px 30px -18px rgba(11,74,94,.45)}
+  .toc li::before{content:counter(toc,decimal-leading-zero);
+    display:inline-flex; align-items:center; justify-content:center;
+    width:2.4em; height:2.4em; flex:0 0 auto; border-radius:12px;
+    background:linear-gradient(135deg,var(--green-700),var(--green-500));
+    color:#fff; font-weight:800; font-size:.85em}
+
+  /* ===== 구간 표지 ===== */
+  .section{background:linear-gradient(135deg,var(--green-100),#d3ece7)}
+  .section::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(55% 60% at 90% 15%, rgba(21,154,140,.14) 0%, transparent 60%)}
+  .section>*{position:relative; z-index:1}
+  .section h2{color:var(--green-900)}
+  .section .lead{color:var(--green-900); opacity:.8}
+
+  /* ===== 마무리 ===== */
+  .closing{background:linear-gradient(135deg,var(--green-700),var(--green-900)); color:#fff; overflow:hidden}
+  .closing::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(50% 50% at 80% 20%, rgba(111,198,182,.28) 0%, transparent 60%)}
+  .closing>*{position:relative; z-index:1}
+  .closing .lead{color:rgba(255,255,255,.92)}
+
+  /* 본문 보조 요소 */
+  ul.points{margin-top:2rem; display:grid; gap:1rem; max-width:48ch}
+  ul.points li{list-style:none; position:relative; padding:.7rem .9rem .7rem 2.4rem;
+    font-size:clamp(1.05rem,2vw,1.4rem); color:var(--ink); line-height:1.5;
+    border-radius:12px; transition:background .2s}
+  ul.points li:hover{background:rgba(21,154,140,.06)}
+  ul.points li b{color:var(--green-700)}
+  ul.points li::before{content:""; position:absolute; left:.9rem; top:1.15em;
+    width:.6rem; height:.6rem; border-radius:50%;
+    background:linear-gradient(135deg,var(--green-500),var(--green-300));
+    box-shadow:0 0 0 4px rgba(21,154,140,.12)}
+
+  /* 안전 3단계 배지 */
+  .levels{display:flex; gap:1.3rem; margin-top:2.4rem; flex-wrap:wrap}
+  .level{flex:1; min-width:190px; border-radius:20px; padding:1.6rem 1.7rem; color:#fff;
+    position:relative; overflow:hidden;
+    box-shadow:0 20px 40px -22px rgba(11,74,94,.5)}
+  .level::after{content:""; position:absolute; top:-30%; right:-10%; width:60%; height:80%;
+    background:radial-gradient(circle, rgba(255,255,255,.22), transparent 70%)}
+  .level b{font-size:clamp(1.2rem,2.4vw,1.7rem); display:block; margin-bottom:.4rem}
+  .level span{font-size:clamp(.9rem,1.6vw,1.1rem); opacity:.95; line-height:1.45}
+  .lv-safe{background:linear-gradient(135deg,#2e9e42,#1f7d32)}
+  .lv-caution{background:linear-gradient(135deg,#f5b027,#e08c00)}
+  .lv-danger{background:linear-gradient(135deg,#e14b3a,#b7301f)}
+
+  /* ===== 실제 작동 화면 (라이브 데모) ===== */
+  .demo{flex-direction:row; align-items:center; gap:4vw; padding:6vh 6vw}
+  .demo .copy{flex:1 1 320px; min-width:0}
+  .demo .copy .lead{margin-top:1.2rem; font-size:clamp(1rem,1.9vw,1.35rem)}
+  .demo ul.points{margin-top:1.4rem; gap:.8rem}
+  .demo ul.points li{font-size:clamp(1rem,1.8vw,1.25rem)}
+
+  /* PC 브라우저 목업 (안쪽에 실제 페이지를 데스크톱 폭으로 그대로 띄움) */
+  .browser{
+    position:relative; flex:0 0 auto;
+    width:660px; border-radius:14px; overflow:hidden;
+    background:#0b2f38;
+    box-shadow:0 30px 60px -20px rgba(11,74,94,.55), 0 0 0 1px rgba(255,255,255,.06) inset;
+  }
+  .browser .bar{      /* 상단 툴바 (신호등 + 주소창) */
+    height:40px; display:flex; align-items:center; gap:10px; padding:0 14px;
+    background:linear-gradient(180deg,#123c46,#0e333c);
+  }
+  .browser .dots{display:flex; gap:7px; flex:0 0 auto}
+  .browser .dots i{width:12px; height:12px; border-radius:50%; display:block}
+  .browser .dots i:nth-child(1){background:#ff5f56}
+  .browser .dots i:nth-child(2){background:#ffbd2e}
+  .browser .dots i:nth-child(3){background:#27c93f}
+  .browser .url{
+    flex:1; height:24px; border-radius:12px; margin-left:6px;
+    background:rgba(255,255,255,.12); color:rgba(255,255,255,.78);
+    font-size:12px; display:flex; align-items:center; gap:.4rem; padding:0 12px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .browser .url::before{content:"🔒"; font-size:10px; opacity:.8}
+  .browser .screen{
+    width:100%; height:412px; overflow:hidden; background:#fff; position:relative;
+  }
+  .browser iframe{
+    width:1280px; height:800px; border:0;
+    transform:scale(.515625); transform-origin:top left;   /* 660/1280 */
+    background:#fff;
+  }
+  .browser .badge{
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    background:rgba(11,74,94,.92); color:#fff; z-index:4;
+    font-size:12px; font-weight:600; letter-spacing:.02em;
+    padding:.35rem .8rem; border-radius:999px; white-space:nowrap;
+    display:flex; align-items:center; gap:.4rem;
+  }
+  .browser .badge::before{content:""; width:7px; height:7px; border-radius:50%;
+    background:#4ade80; box-shadow:0 0 0 0 rgba(74,222,128,.7); animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}
+    70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+
+  /* 화면이 좁거나 낮을 때 브라우저 목업을 자동 축소 */
+  @media (max-width:1200px){ .browser{transform:scale(.9); transform-origin:center right} }
+  @media (max-height:720px){ .browser{transform:scale(.82); transform-origin:center} }
+  @media (max-height:600px){ .browser{transform:scale(.68)} }
+  /* 좁은 화면(모바일)에서는 위아래로 배치 */
+  @media (max-width:860px){
+    .demo{flex-direction:column; gap:3vh; padding:5vh 6vw; justify-content:flex-start}
+    .demo .copy{flex:none}
+    .browser{width:min(660px,90vw); transform:none}
+    .browser .screen{height:calc(min(660px,90vw) * .32)}
+  }
+
+  /* ===== 하단 진행 표시 / 페이지 번호 ===== */
+  #progress{position:fixed; bottom:0; left:0; height:5px; background:var(--green-500);
+    width:0; transition:width .3s; z-index:10}
+  #counter{position:fixed; bottom:14px; right:20px; font-size:13px; color:var(--muted);
+    z-index:10; font-variant-numeric:tabular-nums}
+  .is-cover #counter,.is-closing #counter{color:rgba(255,255,255,.7)}
+  #hint{position:fixed; bottom:14px; left:20px; font-size:12px; color:var(--muted);
+    z-index:10; opacity:.7}
+
+  @media print{ .slide{display:flex; position:relative; page-break-after:always; height:100vh}
+    #progress,#counter,#hint{display:none} }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ========== 1. 표지 ========== -->
+  <section class="slide cover active">
+    <div class="eyebrow">SW AI 특강</div>
+    <h1 class="brand"><img class="brand-logo" src="favicon.png" alt="바당타임 로고">바당타임</h1>
+    <p class="lead">제주 바다의 실시간 물때·기상을 분석해<br>안전한 입장 여부를 알려주는 서비스</p>
+    <div class="meta">
+      <span>제주대학교 컴퓨터공학과 2023108124 최세연</span>
+    </div>
+  </section>
+
+  <!-- ========== 2. 목차 ========== -->
+  <section class="slide toc">
+    <h2>목차</h2>
+    <ol>
+      <li>제작 배경</li>
+      <li>핵심 기능</li>
+      <li>작동 화면</li>
+    </ol>
+  </section>
+
+  <!-- ========== 3. 문제 ========== -->
+  <section class="slide">
+    <div class="eyebrow">배경과 문제</div>
+    <h2>물때가 맞지 않아 바다 앞에서 발길을 돌립니다</h2>
+    <p class="lead">제주 바다를 즐기고 싶어도 물때·파고·기상특보 정보가 여기저기 흩어져 있어, 막상 도착하면 입장하지 못하거나 위험한 상황을 마주하는 일이 많습니다.</p>
+  </section>
+
+  <!-- ========== 4. 솔루션 ========== -->
+  <section class="slide section">
+    <div class="eyebrow">해결</div>
+    <h2>실시간 데이터를 모아<br>"지금 들어가도 될까?"에 답합니다</h2>
+    <p class="lead">조석·기상·특보 데이터를 한 화면에 연동해 간조·만조 시간과 해안의 입장 가능 여부를 보여줍니다.</p>
+  </section>
+
+  <!-- ========== 5. 핵심 기능 개요 ========== -->
+  <section class="slide">
+    <div class="eyebrow">핵심 기능</div>
+    <h2>네 가지 축으로 오늘의 바다를 읽습니다</h2>
+    <ul class="points">
+      <li><b>조석·파고</b> — 만조·간조 시간과 조위·파고 그래프</li>
+      <li><b>기상·특보</b> — 파고·풍속·수온·기상특보 실시간 연동</li>
+      <li><b>안전 판단</b> — 데이터를 종합한 입수 3단계 판정</li>
+      <li><b>현장 제보</b> — 해변에 있는 사람의 해변 안전에 대한 리뷰 저장</li>
+      <li><b>AI 추천 · 지도</b> — 최적 해변 추천과 길찾기</li>
+    </ul>
+  </section>
+
+  <!-- ========== 6. 안전 판단 3단계 ========== -->
+  <section class="slide">
+    <div class="eyebrow">안전 판단</div>
+    <h2>파고·풍속·물때·특보를 종합해 3단계로 판정</h2>
+    <div class="levels">
+      <div class="level lv-safe"><b>입수 가능</b><span>파고·풍속 안전, 특보 없음</span></div>
+      <div class="level lv-caution"><b>주의</b><span>기준 초과 또는 주의보 발효</span></div>
+      <div class="level lv-danger"><b>입수 금지</b><span>경보·태풍 등 위험 특보</span></div>
+    </div>
+  </section>
+
+  <!-- ========== 7. 데모 구간 표지 ========== -->
+  <section class="slide section">
+    <div class="eyebrow">Live Demo</div>
+    <h2>작동 화면</h2>
+    <p class="lead">실제 작동 화면은 다음과 같습니다.</p>
+  </section>
+
+  <!-- ========== 8. 데모 · 대시보드 ========== -->
+  <section class="slide demo">
+    <div class="copy">
+      <div class="eyebrow">실제 작동 화면 · ① 대시보드</div>
+      <h2>오늘의 바다를 한 화면에</h2>
+      <ul class="points">
+        <li>상단에 <b>통합 안전지수</b>와 파고·풍속·물때·특보 요약</li>
+        <li>지금 <b>입수 가능한 해안 카드</b>를 실시간으로 정렬</li>
+        <li>카드를 누르면 곧바로 해안 상세로 이동</li>
+      </ul>
+    </div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+        <span class="url">badangtime.app / index.html</span></div>
+      <div class="screen">
+        <iframe data-src="index.html" title="바당타임 대시보드" loading="lazy"></iframe>
+        <span class="badge">LIVE · 대시보드</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 9. 데모 · 해안 상세 ========== -->
+  <section class="slide demo">
+    <div class="copy">
+      <div class="eyebrow">실제 작동 화면 · ② 해안 상세</div>
+      <h2>조석·파고 그래프와 안전 분석</h2>
+      <ul class="points">
+        <li><b>조석 정보</b>와 <b>파고 예측 그래프</b>를 순수 SVG로 표시</li>
+        <li>AI 안전 분석과 <b>안전지수 보고서</b> 제공</li>
+        <li><b>오늘 제보(LIVE)</b> · 담당기관 전화 · 카카오맵 길찾기</li>
+      </ul>
+    </div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+        <span class="url">badangtime.app / detail.html?beach=sagye</span></div>
+      <div class="screen">
+        <iframe data-src="detail.html?beach=sagye" title="바당타임 해안 상세" loading="lazy"></iframe>
+        <span class="badge">LIVE · 해안 상세</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 10. 데모 · AI 추천 ========== -->
+  <section class="slide demo">
+    <div class="copy">
+      <div class="eyebrow">실제 작동 화면 · ③ AI 추천</div>
+      <h2>지금 가장 안전한 해변을 제시</h2>
+      <ul class="points">
+        <li>실시간 조위·풍향·수온을 기준으로 <b>입수 최적지</b> 추천</li>
+        <li>추천 이유를 함께 설명</li>
+        <li>채팅으로 <b>다른 해변의 안전 상태</b>도 되물어볼 수 있음</li>
+      </ul>
+    </div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+        <span class="url">badangtime.app / ai.html</span></div>
+      <div class="screen">
+        <iframe data-src="ai.html" title="바당타임 AI 추천" loading="lazy"></iframe>
+        <span class="badge">LIVE · AI 추천</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 11. 데모 · 지도 ========== -->
+  <section class="slide demo">
+    <div class="copy">
+      <div class="eyebrow">실제 작동 화면 · ④ 안전 지도</div>
+      <h2>해안 위치와 길찾기를 한눈에</h2>
+      <ul class="points">
+        <li><b>카카오맵</b>에 현재 위치와 해안 위치를 표시</li>
+        <li>해안별 안전 상태를 지도 위에서 구분</li>
+        <li>선택한 해안까지 <b>길찾기</b> 연결</li>
+      </ul>
+    </div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+        <span class="url">badangtime.app / map.html</span></div>
+      <div class="screen">
+        <iframe data-src="map.html" title="바당타임 안전 지도" loading="lazy"></iframe>
+        <span class="badge">LIVE · 안전 지도</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 12. 마무리 ========== -->
+  <section class="slide closing">
+    <div class="eyebrow">정리</div>
+    <h2>바당타임 — 안전하게 즐기는 제주 바다</h2>
+    <p class="lead">흩어져 있던 물때·기상·안전 정보를 한 화면에 모으고, 실시간 데이터로 "지금 들어가도 될까?"에 바로 답합니다.<br>감사합니다.</p>
+  </section>
+
+</div>
+
+<div id="progress"></div>
+<div id="counter"></div>
+<div id="hint">← → 방향키로 이동</div>
+
+<script>
+/* ============ 슬라이드 내비게이션 ============ */
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=slides.findIndex(s=>s.classList.contains('active'));
+  if(i<0)i=0;
+  const progress=document.getElementById('progress');
+  const counter=document.getElementById('counter');
+
+  /* 데모 슬라이드의 iframe은 해당 슬라이드를 처음 볼 때 로드
+     (4개 앱을 동시에 띄우지 않아 가볍고, 지도 등 오류를 피함) */
+  function loadFrames(slide){
+    slide.querySelectorAll('iframe[data-src]').forEach(f=>{
+      f.src=f.getAttribute('data-src'); f.removeAttribute('data-src');
+    });
+  }
+
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    loadFrames(slides[i]);
+    progress.style.width=((i+1)/slides.length*100)+'%';
+    counter.textContent=(i+1)+' / '+slides.length;
+    document.body.className=slides[i].classList.contains('cover')?'is-cover':
+      slides[i].classList.contains('closing')?'is-closing':'';
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(slides.length-1)}
+    else if(e.key==='f'||e.key==='F'){document.documentElement.requestFullscreen?.()}
+  });
+  /* 클릭으로 넘길 때, 데모 화면(iframe·버튼) 조작은 방해하지 않도록
+     폰 화면 안쪽은 이동에서 제외 */
+  document.addEventListener('click',e=>{
+    if(e.target.closest('.phone')) return;      /* 폰 화면 안은 조작용 */
+    (e.clientX < innerWidth*0.25)?prev():next();
+  });
+  show(i);
+})();
+</script>
+</body>
+</html>
